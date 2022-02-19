@@ -1,7 +1,6 @@
 {
   "name": "pbl_week2",
   "version": "1.0.0",
-  "description": "",
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -18,5 +17,14 @@
   },
   "devDependencies": {
     "sequelize-cli": "^6.4.1"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pbl-week2-team3/jeongyong-backend.git"
+  },
+  "bugs": {
+    "url": "https://github.com/pbl-week2-team3/jeongyong-backend/issues"
+  },
+  "homepage": "https://github.com/pbl-week2-team3/jeongyong-backend#readme",
+  "description": ""
 }

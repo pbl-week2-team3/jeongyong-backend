@@ -4,7 +4,7 @@ const { User } = require("../models");
 const router = express.Router();
 
 router.post("/login", async (req, res) => {
-    const { email, password } = req.body;
+    const { id, password } = req.body;
 
     if (password.length === 0)
         return res.status(400).send({ result: "false", errorMessage: "비밀번호를 입력해주세요." });
@@ -13,7 +13,7 @@ router.post("/login", async (req, res) => {
     // if (email regex a@a.a)
     //  return res.status(400).send({ result: "false", errorMessage: "이메일 형식이 아닙니다." });
 
-    const findUser = await User.findByPk(email);
+    const findUser = await User.findByPk(id);
     if (findUser === null)
         return res.status(400).send({ result: "false", errorMessage: "가입된 email정보가 없습니다." });
 
