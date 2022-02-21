@@ -1,4 +1,5 @@
 const express = require("express");
+const helmet = require("helmet");
 const port = 3000;
 const app = express();
 
@@ -12,7 +13,7 @@ sequelize.sync({ force: false })
     });
 
 const userRouter = require("./routes/user");
-const megazineRouter = require("./routes/megazine");
+const megazineRouter = require("./routes/post");
 const commentRouter = require("./routes/comment");
 
 const requestMiddleware = (req, res, next) => {
@@ -20,9 +21,14 @@ const requestMiddleware = (req, res, next) => {
     next();
 };
 
+app.use(helmet());
+app.use(helmet.contentSecurityPolicy());
+app.use(helmet.hidePoweredBy());
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(requestMiddleware);
+
 app.use("/api", [userRouter, megazineRouter, commentRouter]);
 
 app.get('/', (req, res) => {

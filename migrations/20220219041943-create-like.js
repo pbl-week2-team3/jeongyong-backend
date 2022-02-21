@@ -14,9 +14,6 @@ module.exports = {
       post_id: {
         type: Sequelize.BIGINT
       },
-      like: {
-        type: Sequelize.BOOLEAN
-      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE
