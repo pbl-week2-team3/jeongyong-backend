@@ -1,5 +1,7 @@
 // 회원가입, 로그인 메시지
 const emailFormError = "이메일 형식이 아닙니다.";
+const nicknameLengthError = "닉네임은 알파벳과 숫자로만 구성된 3글자 이상이어야 합니다.";
+const passwordLengthError = "비밀번호는 최소 4자 이상이어야 하고 닉네임이 포함될 수 없습니다.";
 
 const isRegistedError = "이미 등록된 이메일이나 닉네임입니다.";
 const isNotRegistedError = "등록되지 않은 사용자이거나 비밀번호가 틀렸습니다.";
@@ -19,6 +21,8 @@ const duplicateLike = "좋아요 중복 요청입니다.";
 
 module.exports = { 
     emailFormError,
+    nicknameLengthError,
+    passwordLengthError,
     isRegistedError,
     isNotRegistedError,
     isEmptyError, 

@@ -4,7 +4,7 @@ const { jsonWebTokenKey } = require("../config/config.json");
 const { User } = require("../models");
 
 const authMiddleware = async (req, res, next) => {
-    const { authorization } = req.headers;
+    const { authorization } = req.cookies;
     const [tokenType, tokenValue] = authorization.split(' ');
 
     if (tokenType !== 'Bearer')
@@ -13,7 +13,7 @@ const authMiddleware = async (req, res, next) => {
     try {
         const { nickname } = jwt.verify(tokenValue, jsonWebTokenKey);
         const findUser = await User.findAll({
-            attributes: [ "nickname" ],
+            attributes: [ "nickname", "profile_img_url" ],
             where: {
                 nickname
             },
@@ -21,6 +21,7 @@ const authMiddleware = async (req, res, next) => {
         });
         
         res.locals.nickname = findUser[0]["nickname"];
+        res.locals.profile_img = findUser[0]["profile_img_url"];
         next();
     } catch (error) {
         return res.status(401).send({ success: "false", message: errorMessage.authError })
@@ -28,38 +29,3 @@ const authMiddleware = async (req, res, next) => {
 };
 
 module.exports = authMiddleware;
-
-// module.exports = (req, res, next) => {
-//     const { authorization } = req.headers;
-//     const [tokenType, tokenValue] = authorization.split(' ');
-
-//     if (tokenType !== 'Bearer')
-//         return res.status(401).send({ success: "false", message: errorMessage.authError });
-
-//     try {
-//         const { nickname } = jwt.verify(tokenValue, jsonWebTokenKey);
-//         const findUser = User.findAll({
-//             attributes: [ "nickname" ],
-//             where: {
-//                 nickname
-//             },
-//             raw: true
-//         });
-        
-        
-//         User.findAll({ 
-//             attributes: [ "nickname" ],
-//             where: {
-//                 nickname
-//             },
-//             raw: true
-//             })
-//             .then((result) => {
-//             console.log("middle: ", result[0]["nickname"]);
-//             res.locals.nickname = result;
-//         });
-//         next();
-//     } catch (error) {
-//         return res.status(401).send({ success: "false", message: errorMessage.authError })
-//     }
-// };

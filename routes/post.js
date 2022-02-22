@@ -1,7 +1,6 @@
 const express = require("express");
 const { Op, Sequelize } = require("sequelize");
-const { Post, sequelize } = require("../models");
-const { Like } = require("../models");
+const { Post, Like, User, sequelize } = require("../models");
 // const { Comment } = require("../models");
 const authMiddleware = require("../middlewares/auth-middleware");
 const message = require("../message");
@@ -35,10 +34,49 @@ router.post("/post", authMiddleware, async (req, res) => {
 });
 
 // 게시글 조회
-router.get("/post/:postId", async (req, res) => {
-    const postId = req.params;
+router.get("/post/:postId", authMiddleware, async (req, res) => {
+    const { postId } = req.params;
+    const { nickname } = res.locals;
 
-    res.send({});
+    const findPost = await Post.findAll({
+        raw: true,
+        attributes: [ "id", ["user_id", "nickname"], "contents", "img_url", "createdAt" ],
+        where: {
+            id: postId,
+        }
+    });
+
+    if (findPost.length === 0)
+        return res.status(400).send({ success: "false", messages: message.isNotExistPost });
+
+    const findUser = await User.findAll({
+        raw: true,
+        attributes: [ "profile_img_url" ],
+        where: {
+            nickname: findPost[0]["nickname"]
+        }
+    });
+
+    if (findUser.length === 0)
+        return res.status(400).send({ success: "false", messages: message.isNotRegistedError });
+
+    const query = `SELECT COUNT(post_id) AS like_count,` + 
+                    ` (SELECT COUNT(user_id) FROM likes WHERE post_id = ${postId} AND user_id = "${nickname}") AS like_check` +
+                    ` FROM likes` + 
+                    ` WHERE post_id = ${postId}`;
+
+    const [ result ] = await sequelize.query(query);
+
+    return res.send({
+        id: findPost[0]["id"],
+        nickname: findPost[0]["nickname"],
+        contents: findPost[0]["contents"],
+        img_url: findPost[0]["img_url"],
+        createdAt: findPost[0]["createdAt"],
+        profile_img: findUser[0]["profile_img_url"],
+        like_count: result[0]["like_count"],
+        like_check: result[0]["like_check"]
+    });
 });
 
 // 게시글 수정
@@ -48,12 +86,12 @@ router.put("/post/:postId", authMiddleware, async (req, res) => {
     const { nickname } = res.locals;
 
     const findPost = await Post.findAll({
-        attributes: [ "id", "user_id" ],
+        attributes: [ "id", "user_id", "createdAt" ],
         raw: true,
         where: {
             id: postId,
         }
-    })
+    });
 
     if (findPost.length === 0)
         return res.status(400).send({ success: "false", messages: message.isNotExistPost });
@@ -70,17 +108,31 @@ router.put("/post/:postId", authMiddleware, async (req, res) => {
         }
     });
 
-    // const findAfterUpdate = await Post.findAll({
-    //     attributes: [ "id", "user_id", "contents", "img_url", "" ],
-    //     raw: true,
-    //     where: {
-    //         id: postId,
-    //     }
-    // });
-    
-    // 수정 후 게시글을 보내줘야 한단다.
-    
-    return res.send({ success: "true" });
+    const findAfterUpdatePost = await Post.findAll({
+        raw: true,
+        attributes: [ "id", ["user_id", "nickname"], "contents", "img_url", "createdAt" ],
+        where: {
+            id: postId,
+        }
+    });
+
+    const query = `SELECT COUNT(post_id) AS like_count,` + 
+                    ` (SELECT COUNT(user_id) FROM likes WHERE post_id = ${postId} AND user_id = "${nickname}") AS like_check` +
+                    ` FROM likes` + 
+                    ` WHERE post_id = ${postId}`;
+
+    const [ result ] = await sequelize.query(query);
+
+    return res.send({
+        id: findAfterUpdatePost[0]["id"],
+        nickname: findAfterUpdatePost[0]["nickname"],
+        contents: findAfterUpdatePost[0]["contents"],
+        img_url: findAfterUpdatePost[0]["img_url"],
+        createdAt: findAfterUpdatePost[0]["createdAt"],
+        profile_img: res.locals.profile_img,
+        like_count: result[0]["like_count"],
+        like_check: result[0]["like_check"]
+    });
 });
 
 // 게시글 삭제

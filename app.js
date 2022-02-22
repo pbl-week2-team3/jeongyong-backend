@@ -1,7 +1,10 @@
 const express = require("express");
 const helmet = require("helmet");
+const cookieParser = require("cookie-parser");
+const cors = require("cors");
 const port = 3000;
 const app = express();
+
 
 const { sequelize } = require('./models');
 
@@ -16,6 +19,7 @@ const userRouter = require("./routes/user");
 const megazineRouter = require("./routes/post");
 const commentRouter = require("./routes/comment");
 
+
 const requestMiddleware = (req, res, next) => {
     console.log("Request URL:", req.originalUrl, " - ", new Date());
     next();
@@ -24,7 +28,9 @@ const requestMiddleware = (req, res, next) => {
 app.use(helmet());
 app.use(helmet.contentSecurityPolicy());
 app.use(helmet.hidePoweredBy());
+app.use(cors());
 
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(requestMiddleware);
