@@ -6,18 +6,23 @@ const { jsonWebTokenKey } = require("../config/config.json");
 const registIsValid = require("../lib/registValidate");
 const message = require("../message");
 const crypto = require("crypto");
-const cookieParser = require("cookie-parser")
+const authMiddleware = require("../middlewares/auth-middleware");
+const loggedinMiddleware = require("../middlewares/loggedin-middleware");
 const router = express.Router();
 
 // 사용자 로그인
-router.post("/login", async (req, res) => {
+router.post("/login", loggedinMiddleware, async (req, res) => {
     const { id, password } = req.body;
+    const { loggedin } = res.locals;
 
     if (id.length === 0 || password.length === 0)
         return res.status(400).send({ success: "false", messages: message.isEmptyError });
 
     if (!registIsValid.emailIsValid.test(id))
         return res.status(400).send({ success: "false", messages: message.emailFormError });
+
+    if (loggedin)
+        return res.status(400).send({ success: "false", messages: message.loggedinError });
 
     const findUser = await User.findAll({
         attributes: [ 'email', 'password', 'nickname' ],
@@ -31,14 +36,15 @@ router.post("/login", async (req, res) => {
     if (findUser.length === 0)
         return res.status(401).send({ success: "false", messages: message.isNotRegistedError });
 
-    const token = jwt.sign({ nickname: findUser[0]["nickname"] }, jsonWebTokenKey);
-    res.cookie('token', 'Bearer ' + token, { maxAge: 1800000, httpOnly: true });
+    const newToken = jwt.sign({ nickname: findUser[0]["nickname"] }, jsonWebTokenKey);
+    res.cookie('token', 'Bearer ' + newToken, { maxAge: 1800000, httpOnly: true });
     return res.status(201).send({ success: "true", messages: "Login success" });
 });
 
 // 사용자 등록
-router.post("/register", async (req, res) => {
+router.post("/register", loggedinMiddleware, async (req, res) => {
     const { id, nickname, password, confirmPassword, profile_img_url } = req.body;
+    const { loggedin } = res.locals;
     
     if (id.length === 0 || confirmPassword.length === 0)
         return res.status(400).send({ success: "false", messages: message.isEmptyError });
@@ -51,6 +57,9 @@ router.post("/register", async (req, res) => {
 
     if (!registIsValid.emailIsValid.test(id))
         return res.status(400).send({ success: "false", messages: message.emailFormError });
+
+    if (loggedin)
+        return res.status(400).send({ success: "false", messages: message.loggedinError });
 
     const existUser = await User.findAll({
         attributes: [ "email", "nickname" ],
@@ -71,6 +80,16 @@ router.post("/register", async (req, res) => {
     });
 
     return res.status(201).send({ success: "true", messages: "회원가입은 토큰을 발급하지 않으니 프론트께서는 다시 로그인API를 호출해주세요" });
+});
+
+
+// 임시
+router.delete('/logout', authMiddleware, async (req, res) => {
+    // const { token } = req.cookies;
+    console.log(req.cookies);
+    res.clearCookie('token');
+    console.log(req.cookies);
+    return res.send({});
 });
 
 module.exports = router;

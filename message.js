@@ -5,6 +5,7 @@ const passwordLengthError = "비밀번호는 최소 4자 이상이어야 하고 
 
 const isRegistedError = "이미 등록된 이메일이나 닉네임입니다.";
 const isNotRegistedError = "등록되지 않은 사용자이거나 비밀번호가 틀렸습니다.";
+const loggedinError = "이미 로그인한 사용자입니다.";
 
 const isEmptyError = "빈 칸이 있습니다. 채워주세요.";
 const confirmPasswordError = "입력하신 비밀번호가 비밀번호 확인란과 일치하지 않습니다.";
@@ -25,6 +26,7 @@ module.exports = {
     passwordLengthError,
     isRegistedError,
     isNotRegistedError,
+    loggedinError,
     isEmptyError, 
     confirmPasswordError,
     authError,

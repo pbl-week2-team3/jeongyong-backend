@@ -1,19 +1,37 @@
 const express = require("express");
 const { Op, Sequelize } = require("sequelize");
 const { Post, Like, User, sequelize } = require("../models");
-// const { Comment } = require("../models");
 const authMiddleware = require("../middlewares/auth-middleware");
+const loggedinMiddleware = require("../middlewares/loggedin-middleware");
 const message = require("../message");
 const router = express.Router();
 
 
 // 게시글 목록 가져오기
-router.get("/post", async (req, res) => {
-    const result = await Post.findAll({raw: true});
+router.get("/post", loggedinMiddleware, async (req, res) => {
+    const { loggedin } = res.locals;
+    let query;
 
-    // 
-
-    return res.send(result);
+    if ( loggedin ) {
+        query = `SELECT p.id, p.user_id, p.contents, p.img_url, u.profile_img_url,` + 
+                ` (SELECT COUNT(post_id) FROM likes WHERE p.id = likes.post_id) AS like_count,` + 
+                ` (IF (EXISTS (SELECT user_id FROM likes WHERE p.id = likes.post_id AND likes.user_id = '${res.locals.nickname}'), 1, 0)) AS like_check,` +
+                ` p.createdAt` +
+                ` FROM posts AS p, users AS u` + 
+                ` WHERE p.user_id = u.nickname;`;
+    } else {
+        query = `SELECT p.id, p.user_id, p.contents, p.img_url, u.profile_img_url,` + 
+                ` (SELECT COUNT(post_id) FROM likes WHERE p.id = likes.post_id) AS like_count,` + 
+                ` (IF (EXISTS (SELECT user_id FROM likes WHERE p.id = likes.post_id AND likes.user_id = ''), 1, 0)) AS like_check,` +
+                ` p.createdAt` +
+                ` FROM posts AS p, users AS u` + 
+                ` WHERE p.user_id = u.nickname;`;
+    }
+    
+    const [ post ] = await sequelize.query(query);
+    return res.send({
+        post,
+    });
 });
 
 // 게시글 추가
@@ -34,48 +52,30 @@ router.post("/post", authMiddleware, async (req, res) => {
 });
 
 // 게시글 조회
-router.get("/post/:postId", authMiddleware, async (req, res) => {
+router.get("/post/:postId", loggedinMiddleware, async (req, res) => {
     const { postId } = req.params;
-    const { nickname } = res.locals;
+    const { loggedin } = res.locals;
+    let query;
 
-    const findPost = await Post.findAll({
-        raw: true,
-        attributes: [ "id", ["user_id", "nickname"], "contents", "img_url", "createdAt" ],
-        where: {
-            id: postId,
-        }
-    });
+    if (loggedin) {
+        query = `SELECT p.id, p.user_id, p.contents, p.img_url, u.profile_img_url,` + 
+                ` (SELECT COUNT(post_id) FROM likes WHERE p.id = likes.post_id) AS like_count,` + 
+                ` (IF (EXISTS (SELECT user_id FROM likes WHERE p.id = likes.post_id AND likes.user_id = '${res.locals.nickname}'), true, false)) AS like_check,` +
+                ` p.createdAt` +
+                ` FROM posts AS p, users AS u` + 
+                ` WHERE p.user_id = u.nickname AND p.id = ${postId};`;
+    } else {
+        query = `SELECT p.id, p.user_id, p.contents, p.img_url, u.profile_img_url,` + 
+                ` (SELECT COUNT(post_id) FROM likes WHERE p.id = likes.post_id) AS like_count,` + 
+                ` (IF (EXISTS (SELECT user_id FROM likes WHERE p.id = likes.post_id AND likes.user_id = ''), true, false)) AS like_check,` +
+                ` p.createdAt` +
+                ` FROM posts AS p, users AS u` + 
+                ` WHERE p.user_id = u.nickname AND p.id = ${postId};`;
+    }
 
-    if (findPost.length === 0)
-        return res.status(400).send({ success: "false", messages: message.isNotExistPost });
-
-    const findUser = await User.findAll({
-        raw: true,
-        attributes: [ "profile_img_url" ],
-        where: {
-            nickname: findPost[0]["nickname"]
-        }
-    });
-
-    if (findUser.length === 0)
-        return res.status(400).send({ success: "false", messages: message.isNotRegistedError });
-
-    const query = `SELECT COUNT(post_id) AS like_count,` + 
-                    ` (SELECT COUNT(user_id) FROM likes WHERE post_id = ${postId} AND user_id = "${nickname}") AS like_check` +
-                    ` FROM likes` + 
-                    ` WHERE post_id = ${postId}`;
-
-    const [ result ] = await sequelize.query(query);
-
+    const [ post ] = await sequelize.query(query);
     return res.send({
-        id: findPost[0]["id"],
-        nickname: findPost[0]["nickname"],
-        contents: findPost[0]["contents"],
-        img_url: findPost[0]["img_url"],
-        createdAt: findPost[0]["createdAt"],
-        profile_img: findUser[0]["profile_img_url"],
-        like_count: result[0]["like_count"],
-        like_check: result[0]["like_check"]
+        post,
     });
 });
 

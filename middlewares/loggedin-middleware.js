@@ -3,16 +3,20 @@ const message = require("../message");
 const { jsonWebTokenKey } = require("../config/config.json");
 const { User } = require("../models");
 
-const authMiddleware = async (req, res, next) => {
+const logedinMiddleware = async (req, res, next) => {
     const { token } = req.cookies;
-    
-    if (!token)
-        return res.status(401).send({ success: "false", messages: message.authError})
+
+    if (!token) {
+        res.locals.loggedin = false;
+        return next();
+    } 
 
     const [tokenType, tokenValue] = token.split(' ');
 
-    if (tokenType !== 'Bearer')
-        return res.status(401).send({ success: "false", messages: message.authError });
+    if (tokenType !== 'Bearer') {
+        res.locals.loggedin = false;
+        return next();
+    }
 
     try {
         const { nickname } = jwt.verify(tokenValue, jsonWebTokenKey);
@@ -23,17 +27,20 @@ const authMiddleware = async (req, res, next) => {
             },
             raw: true
         });
-        
-        if (findUser.length === 0)
-            return res.status(401).send({ success: "false", messages: message.authError })
 
+        if (findUser.length === 0) {
+            res.locals.loggedin = false;
+            return next();
+        }
+        
         res.locals.nickname = findUser[0]["nickname"];
         res.locals.profile_img = findUser[0]["profile_img_url"];
         res.locals.loggedin = true;
-        next();
+        return next();
     } catch (error) {
-        return res.status(401).send({ success: "false", messages: message.authError })
+        res.locals.loggedin = false;
+        return next();
     }
 };
 
-module.exports = authMiddleware;
+module.exports = logedinMiddleware;
