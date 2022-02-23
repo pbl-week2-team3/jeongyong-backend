@@ -43,7 +43,8 @@ router.post("/login", loggedinMiddleware, async (req, res) => {
 
 // 사용자 등록
 router.post("/register", loggedinMiddleware, async (req, res) => {
-    const { id, nickname, password, confirmPassword, profile_img_url } = req.body;
+    const { id, nickname, password, confirmPassword } = req.body;
+    let { profile_img_url } = req.body;
     const { loggedin } = res.locals;
     
     if (id.length === 0 || confirmPassword.length === 0)
@@ -60,6 +61,9 @@ router.post("/register", loggedinMiddleware, async (req, res) => {
 
     if (loggedin)
         return res.status(400).send({ success: "false", messages: message.loggedinError });
+
+    if (!profile_img_url || profile_img_url.length === 0)
+        profile_img_url = "https://w.namu.la/s/69385ea0ef03c79c69fdaa27f2a9513361cc2e7b15fff89292f1e16c391e8a301a3525da697d9c062d407fa8b09d29a593a078af2862601e773b501826596cd1ad94d0ac73d9c61f99ae6050222137a3";
 
     const existUser = await User.findAll({
         attributes: [ "email", "nickname" ],
