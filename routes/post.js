@@ -1,9 +1,9 @@
 const express = require("express");
-const { Op, Sequelize } = require("sequelize");
-const { Post, Like, User, sequelize } = require("../models");
+const { Post, Like, sequelize } = require("../models");
 const authMiddleware = require("../middlewares/auth-middleware");
 const loggedinMiddleware = require("../middlewares/loggedin-middleware");
 const message = require("../message");
+const queryString = require("../query");
 const router = express.Router();
 
 
@@ -13,21 +13,12 @@ router.get("/post", loggedinMiddleware, async (req, res) => {
     let query;
 
     if ( loggedin ) {
-        query = `SELECT p.id, p.user_id, p.contents, p.img_url, u.profile_img_url,` + 
-                ` (SELECT COUNT(post_id) FROM likes WHERE p.id = likes.post_id) AS like_count,` + 
-                ` (IF (EXISTS (SELECT user_id FROM likes WHERE p.id = likes.post_id AND likes.user_id = '${res.locals.nickname}'), 1, 0)) AS like_check,` +
-                ` p.createdAt` +
-                ` FROM posts AS p, users AS u` + 
-                ` WHERE p.user_id = u.nickname;`;
+        query = queryString.loggedinPostFind(res.locals.nickname);
     } else {
-        query = `SELECT p.id, p.user_id, p.contents, p.img_url, u.profile_img_url,` + 
-                ` (SELECT COUNT(post_id) FROM likes WHERE p.id = likes.post_id) AS like_count,` + 
-                ` (IF (EXISTS (SELECT user_id FROM likes WHERE p.id = likes.post_id AND likes.user_id = ''), 1, 0)) AS like_check,` +
-                ` p.createdAt` +
-                ` FROM posts AS p, users AS u` + 
-                ` WHERE p.user_id = u.nickname;`;
+        query = queryString.notLoggedinPostFind();
     }
     
+    console.query;
     const [ post ] = await sequelize.query(query);
     return res.send({
         post,
@@ -39,7 +30,7 @@ router.post("/post", authMiddleware, async (req, res) => {
     const { contents, img_url } = req.body;
     const { nickname } = res.locals;
 
-    if (contents.length === 0)
+    if (!contents || !img_url || contents.length === 0)
         return res.status(400).send({ success: "false", messages: message.isEmptyError });
     
     await Post.create({
@@ -58,25 +49,13 @@ router.get("/post/:postId", loggedinMiddleware, async (req, res) => {
     let query;
 
     if (loggedin) {
-        query = `SELECT p.id, p.user_id, p.contents, p.img_url, u.profile_img_url,` + 
-                ` (SELECT COUNT(post_id) FROM likes WHERE p.id = likes.post_id) AS like_count,` + 
-                ` (IF (EXISTS (SELECT user_id FROM likes WHERE p.id = likes.post_id AND likes.user_id = '${res.locals.nickname}'), true, false)) AS like_check,` +
-                ` p.createdAt` +
-                ` FROM posts AS p, users AS u` + 
-                ` WHERE p.user_id = u.nickname AND p.id = ${postId};`;
+        query = queryString.loggedinPostFindOne(res.locals.nickname, postId);
     } else {
-        query = `SELECT p.id, p.user_id, p.contents, p.img_url, u.profile_img_url,` + 
-                ` (SELECT COUNT(post_id) FROM likes WHERE p.id = likes.post_id) AS like_count,` + 
-                ` (IF (EXISTS (SELECT user_id FROM likes WHERE p.id = likes.post_id AND likes.user_id = ''), true, false)) AS like_check,` +
-                ` p.createdAt` +
-                ` FROM posts AS p, users AS u` + 
-                ` WHERE p.user_id = u.nickname AND p.id = ${postId};`;
+        query = queryString.notLoggedinPostFindOne(postId);
     }
 
-    const [ post ] = await sequelize.query(query);
-    return res.send({
-        post,
-    });
+    const [[post]] = await sequelize.query(query);
+    return res.send(post);
 });
 
 // 게시글 수정
@@ -84,6 +63,9 @@ router.put("/post/:postId", authMiddleware, async (req, res) => {
     const { postId } = req.params;
     const { contents, img_url } = req.body;
     const { nickname } = res.locals;
+
+    if (!contents || !img_url || contents.length === 0)
+        return res.status(400).send({ success: "false", messages: message.isEmptyError });
 
     const findPost = await Post.findAll({
         attributes: [ "id", "user_id", "createdAt" ],
@@ -108,31 +90,9 @@ router.put("/post/:postId", authMiddleware, async (req, res) => {
         }
     });
 
-    const findAfterUpdatePost = await Post.findAll({
-        raw: true,
-        attributes: [ "id", ["user_id", "nickname"], "contents", "img_url", "createdAt" ],
-        where: {
-            id: postId,
-        }
-    });
-
-    const query = `SELECT COUNT(post_id) AS like_count,` + 
-                    ` (SELECT COUNT(user_id) FROM likes WHERE post_id = ${postId} AND user_id = "${nickname}") AS like_check` +
-                    ` FROM likes` + 
-                    ` WHERE post_id = ${postId}`;
-
-    const [ result ] = await sequelize.query(query);
-
-    return res.send({
-        id: findAfterUpdatePost[0]["id"],
-        nickname: findAfterUpdatePost[0]["nickname"],
-        contents: findAfterUpdatePost[0]["contents"],
-        img_url: findAfterUpdatePost[0]["img_url"],
-        createdAt: findAfterUpdatePost[0]["createdAt"],
-        profile_img: res.locals.profile_img,
-        like_count: result[0]["like_count"],
-        like_check: result[0]["like_check"]
-    });
+    const query = queryString.loggedinPostFindOne(nickname, postId);
+    const [[post]] = await sequelize.query(query);
+    return res.send(post);
 });
 
 // 게시글 삭제
@@ -160,6 +120,13 @@ router.delete("/post/:postId", authMiddleware, async (req, res) => {
         }
     });
 
+    // 사실 이 부분은 연계되어 삭제되도록 처리하는 방법이 있을 것 같다.
+    await Like.destroy({
+        where: {
+            post_id: postId
+        }
+    })
+
     return res.send({ success: "true", messages: "" });
 });
 
@@ -170,35 +137,13 @@ router.post("/post/:postId/like", authMiddleware, async (req, res) => {
     const { nickname } = res.locals;
 
     // 이게 과연 옳은 쿼리인가
-    const query = `SELECT IF ( EXISTS ( SELECT id FROM posts WHERE id = ${postId}) AND NOT EXISTS ( SELECT post_id, user_id FROM likes WHERE post_id = ${postId} AND user_id = "${nickname}"), 1, 0) AS result;`;
+    const query = `SELECT IF (` + 
+                ` EXISTS ( SELECT id FROM Posts WHERE id = ${postId}) AND` + 
+                ` NOT EXISTS ( SELECT post_id, user_id FROM Likes WHERE post_id = ${postId} AND user_id = "${nickname}"), 1, 0) AS result;`;
     const [ find ] = await sequelize.query(query);
     
     if (find[0]['result'] === 0)
         return res.status(401).send({ success: "false", messages: "존재하지 않는 게시글이거나 좋아요 중복 요청입니다." });
-
-    // 뭐가 더 나은 방법일까
-    /*
-    const findPost = await Post.findAll({
-        raw: true,
-        where: {
-            id: postId,
-        }
-    });
-
-    if (findPost.length === 0)
-        return res.status(401).send({ success: "false", messages: message.isNotExistPost });
-
-    const findLike = await Like.findAll({
-        raw: true,
-        where: {
-            user_id: nickname,
-            post_id: postId,
-        }
-    });
-
-    if (findLike.length)
-        return res.status(401).send({ success: "false", messages: message.duplicateLike });
-    */
 
     await Like.create({
         user_id: nickname,

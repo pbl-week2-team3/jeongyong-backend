@@ -15,7 +15,7 @@ router.post("/login", loggedinMiddleware, async (req, res) => {
     const { id, password } = req.body;
     const { loggedin } = res.locals;
 
-    if (id.length === 0 || password.length === 0)
+    if (!id || !password || id.length === 0 || password.length === 0)
         return res.status(400).send({ success: "false", messages: message.isEmptyError });
 
     if (!registIsValid.emailIsValid.test(id))
@@ -84,11 +84,8 @@ router.post("/register", loggedinMiddleware, async (req, res) => {
 
 
 // 임시
-router.delete('/logout', authMiddleware, async (req, res) => {
-    // const { token } = req.cookies;
-    console.log(req.cookies);
+router.get('/logout', authMiddleware, async (req, res) => {
     res.clearCookie('token');
-    console.log(req.cookies);
     return res.send({});
 });
 
