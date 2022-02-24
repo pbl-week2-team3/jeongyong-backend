@@ -4,7 +4,10 @@ const { jsonWebTokenKey } = require("../config/config.json");
 const { User } = require("../models");
 
 const authMiddleware = async (req, res, next) => {
-    const { token } = req.cookies;
+    // const { token } = req.cookies;
+
+    const token = req.headers.authorization;
+    // console.log(token);
     
     if (!token)
         return res.status(401).send({ success: "false", messages: message.authError})

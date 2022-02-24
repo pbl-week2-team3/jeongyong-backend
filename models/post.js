@@ -14,12 +14,30 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   Post.init({
-    user_id: DataTypes.STRING,
-    contents: DataTypes.STRING,
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,      
+      primaryKey: true,
+      allowNull: false,
+    },
+    user_id: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    contents: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
     img_url: DataTypes.STRING
   }, {
     sequelize,
     modelName: 'Post',
+    timestamps: true,
+    charset: 'utf8mb4',
   });
+  Post.associate = models => {
+    Post.hasMany(models.Like, {foreignKey: 'post_id', sourceKey: 'id'});
+    Post.belongsTo(models.User, {foreignKey: 'user_id', sourceKey: 'nickname', onDelete: 'cascade'})
+  };
   return Post;
 };

@@ -15,14 +15,14 @@ router.post("/login", loggedinMiddleware, async (req, res) => {
     const { id, password } = req.body;
     const { loggedin } = res.locals;
 
+    if (loggedin)
+        return res.status(400).send({ success: "false", messages: message.loggedinError });
+
     if (!id || !password || id.length === 0 || password.length === 0)
         return res.status(400).send({ success: "false", messages: message.isEmptyError });
 
     if (!registIsValid.emailIsValid.test(id))
         return res.status(400).send({ success: "false", messages: message.emailFormError });
-
-    if (loggedin)
-        return res.status(400).send({ success: "false", messages: message.loggedinError });
 
     const findUser = await User.findAll({
         attributes: [ 'email', 'password', 'nickname' ],
@@ -38,7 +38,7 @@ router.post("/login", loggedinMiddleware, async (req, res) => {
 
     const newToken = jwt.sign({ nickname: findUser[0]["nickname"] }, jsonWebTokenKey);
     res.cookie('token', 'Bearer ' + newToken, { maxAge: 1800000, httpOnly: true });
-    return res.status(201).send({ success: "true", messages: "Login success" });
+    return res.status(201).send({ success: "true", messages: "Login success", token: newToken, nickname: findUser[0]["nickname"] });
 });
 
 // 사용자 등록
@@ -47,6 +47,9 @@ router.post("/register", loggedinMiddleware, async (req, res) => {
     let { profile_img_url } = req.body;
     const { loggedin } = res.locals;
     
+    if (loggedin)
+    return res.status(400).send({ success: "false", messages: message.loggedinError });
+
     if (id.length === 0 || confirmPassword.length === 0)
         return res.status(400).send({ success: "false", messages: message.isEmptyError });
 
@@ -58,9 +61,6 @@ router.post("/register", loggedinMiddleware, async (req, res) => {
 
     if (!registIsValid.emailIsValid.test(id))
         return res.status(400).send({ success: "false", messages: message.emailFormError });
-
-    if (loggedin)
-        return res.status(400).send({ success: "false", messages: message.loggedinError });
 
     if (!profile_img_url || profile_img_url.length === 0)
         profile_img_url = "https://w.namu.la/s/69385ea0ef03c79c69fdaa27f2a9513361cc2e7b15fff89292f1e16c391e8a301a3525da697d9c062d407fa8b09d29a593a078af2862601e773b501826596cd1ad94d0ac73d9c61f99ae6050222137a3";

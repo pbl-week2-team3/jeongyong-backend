@@ -14,11 +14,23 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   Like.init({
-    user_id: DataTypes.STRING,
-    post_id: DataTypes.BIGINT,
+    user_id: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    post_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
   }, {
     sequelize,
     modelName: 'Like',
+    timestamps: true,
+    charset: 'utf8mb4',
   });
+  Like.associate = models => {
+    Like.belongsTo(models.User, {foreignKey: 'user_id', sourceKey: 'nickname', onDelete: 'cascade', onUpdate: 'no action'});
+    Like.belongsTo(models.Post, {foreignKey: 'post_id', sourceKey: 'id', onDelete: 'cascade', onUpdate: 'no action'});
+  };
   return Like;
 };

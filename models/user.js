@@ -15,15 +15,28 @@ module.exports = (sequelize, DataTypes) => {
   }
   User.init({
     email: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    nickname: {
       primaryKey: true,
       type: DataTypes.STRING,
+      allowNull: false,
     },
-    nickname: DataTypes.STRING,
-    password: DataTypes.STRING,
+    password: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
     profile_img_url: DataTypes.STRING
   }, {
     sequelize,
     modelName: 'User',
+    timestamps: true,
+    charset: 'utf8mb4',
   });
+  User.associate = models => {
+    User.hasMany(models.Post, {foreignKey: 'user_id', sourceKey: 'nickname'});
+    User.hasMany(models.Like, {foreignKey: 'user_id', sourceKey: 'nickname'});
+  };
   return User;
 };

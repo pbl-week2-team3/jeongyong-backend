@@ -137,13 +137,11 @@ router.post("/post/:postId/like", authMiddleware, async (req, res) => {
     const { nickname } = res.locals;
 
     // 이게 과연 옳은 쿼리인가
-    const query = `SELECT IF (` + 
-                ` EXISTS ( SELECT id FROM Posts WHERE id = ${postId}) AND` + 
-                ` NOT EXISTS ( SELECT post_id, user_id FROM Likes WHERE post_id = ${postId} AND user_id = "${nickname}"), 1, 0) AS result;`;
+    const query = queryString.notExitstLike(nickname, postId);
     const [ find ] = await sequelize.query(query);
     
     if (find[0]['result'] === 0)
-        return res.status(401).send({ success: "false", messages: "존재하지 않는 게시글이거나 좋아요 중복 요청입니다." });
+        return res.status(401).send({ success: "false", messages: message.duplicateLike });
 
     await Like.create({
         user_id: nickname,
