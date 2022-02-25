@@ -21,7 +21,7 @@ router.get("/post", loggedinMiddleware, async (req, res) => {
 
 // 게시글 추가
 router.post("/post", authMiddleware, async (req, res) => {
-    const { contents, img_url } = req.body;
+    const { contents, img_url, post_type } = req.body;
     const { nickname } = res.locals;
 
     if (!contents || !img_url || contents.length === 0)
@@ -31,6 +31,7 @@ router.post("/post", authMiddleware, async (req, res) => {
         user_id: nickname,
         contents,
         img_url,
+        post_type,
     });
 
     return res.status(201).send({ success: "true", messages: message.success });
@@ -50,7 +51,7 @@ router.get("/post/:postId", loggedinMiddleware, async (req, res) => {
 // 게시글 수정
 router.put("/post/:postId", authMiddleware, async (req, res) => {
     const { postId } = req.params;
-    const { contents, img_url } = req.body;
+    const { contents, img_url, post_type } = req.body;
     const { nickname } = res.locals;
 
     if (!contents || !img_url || contents.length === 0)
@@ -72,7 +73,8 @@ router.put("/post/:postId", authMiddleware, async (req, res) => {
 
     await Post.update({
         contents,
-        img_url
+        img_url,
+        post_type
     }, {
         where: {
             id: postId,
