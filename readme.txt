@@ -59,6 +59,33 @@ API List
                     "등록되지 않은 사용자이거나 비밀번호가 틀렸습니다."
             }
 
+
+// 기능 : 자기 정보 요청
+// 내용 : 로그인 유지상태를 확인하기 위해 요청한다.
+- URL       : '/api/me'
+- example   : 'http://xpecter.shop/api/me'
+- Method    : POST
+- Params    
+            headers
+            {
+                token : 토큰 값
+            }
+- Body example
+            {
+                'id' : STRING,                  // email 형식
+                'password' : STRING,            // 암호
+            }
+- Response example
+            status 201           // 요청 성공
+            { nickname : "닉네임", profile_img_url : "asdfasdf.png" }
+
+            status 400          // 요청 실패
+            { 
+                success : false, 
+                messages : 
+                    "로그인이 필요한 서비스입니다."
+            }
+
 --------------------------------------------------------------------
 // 게시글 관련 API
 
@@ -68,7 +95,12 @@ API List
 - example   : 'http://xpecter.shop/api/post'
 - Method    : GET
 - Params    : None
-- Body      : None
+- Body      
+            // 헤더에 토큰이 있으면 like_check를 한 값을 보낸다.
+            headers
+            {
+                token : 토큰 값
+            }
 - Response example
             status 200
             {

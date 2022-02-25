@@ -1,5 +1,5 @@
 const postFindQuery = (nickname) => {
-    return  `SELECT p.id, p.user_id, p.contents, p.img_url, p.post_type, u.profile_img_url,` + 
+    return  `SELECT p.id, p.user_id, p.contents, p.img_url, p.type, u.profile_img_url,` + 
             ` (SELECT COUNT(post_id) FROM Likes WHERE p.id = Likes.post_id) AS like_count,` + 
             ` (IF (EXISTS (SELECT user_id FROM Likes WHERE p.id = Likes.post_id AND Likes.user_id = '${nickname}'), true, false)) AS like_check,` +
             ` p.createdAt` +
@@ -9,7 +9,7 @@ const postFindQuery = (nickname) => {
 };
 
 const postFindOneQuery = (nickname, postId) => {
-    return  `SELECT p.id, p.user_id, p.contents, p.img_url, p.post_type, u.profile_img_url,` + 
+    return  `SELECT p.id, p.user_id, p.contents, p.img_url, p.type, u.profile_img_url,` + 
             ` (SELECT COUNT(post_id) FROM Likes WHERE p.id = Likes.post_id) AS like_count,` + 
             ` (IF (EXISTS (SELECT user_id FROM Likes WHERE p.id = Likes.post_id AND Likes.user_id = '${nickname}'), true, false)) AS like_check,` +
             ` p.createdAt` +

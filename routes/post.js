@@ -12,6 +12,7 @@ router.get("/post", loggedinMiddleware, async (req, res) => {
     const { nickname } = res.locals;
 
     const query = queryString.postFindQuery(nickname);
+    console.log(query);
     const [ post ] = await sequelize.query(query);
 
     return res.send({
@@ -21,17 +22,17 @@ router.get("/post", loggedinMiddleware, async (req, res) => {
 
 // 게시글 추가
 router.post("/post", authMiddleware, async (req, res) => {
-    const { contents, img_url, post_type } = req.body;
+    const { contents, img_url, type } = req.body;
     const { nickname } = res.locals;
 
-    if (!contents || !img_url || contents.length === 0)
+    if (!contents || !img_url || !type || contents.length === 0)
         return res.status(400).send({ success: "false", messages: message.isEmptyError });
     
     await Post.create({
         user_id: nickname,
         contents,
         img_url,
-        post_type,
+        type,
     });
 
     return res.status(201).send({ success: "true", messages: message.success });
@@ -51,7 +52,7 @@ router.get("/post/:postId", loggedinMiddleware, async (req, res) => {
 // 게시글 수정
 router.put("/post/:postId", authMiddleware, async (req, res) => {
     const { postId } = req.params;
-    const { contents, img_url, post_type } = req.body;
+    const { contents, img_url, type } = req.body;
     const { nickname } = res.locals;
 
     if (!contents || !img_url || contents.length === 0)
@@ -74,7 +75,7 @@ router.put("/post/:postId", authMiddleware, async (req, res) => {
     await Post.update({
         contents,
         img_url,
-        post_type
+        type
     }, {
         where: {
             id: postId,

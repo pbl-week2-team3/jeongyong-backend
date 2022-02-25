@@ -13,9 +13,8 @@ const router = express.Router();
 // 사용자 로그인
 router.post("/login", loggedinMiddleware, async (req, res) => {
     const { id, password } = req.body;
-    const { loggedin } = res.locals;
 
-    if (loggedin)
+    if (res.locals.nickname.length !== 0)
         return res.status(400).send({ success: "false", messages: message.loggedinError });
 
     if (!id || !password || id.length === 0 || password.length === 0)
@@ -45,9 +44,8 @@ router.post("/login", loggedinMiddleware, async (req, res) => {
 router.post("/register", loggedinMiddleware, async (req, res) => {
     const { id, nickname, password, confirmPassword } = req.body;
     let { profile_img_url } = req.body;
-    const { loggedin } = res.locals;
     
-    if (loggedin)
+    if (res.locals.nickname.length !== 0)
     return res.status(400).send({ success: "false", messages: message.loggedinError });
 
     if (id.length === 0 || confirmPassword.length === 0)
@@ -89,7 +87,10 @@ router.post("/register", loggedinMiddleware, async (req, res) => {
 // 내 정보 조회
 router.get('/me', authMiddleware, async (req, res) => {
     const { nickname, profile_img } = res.locals;
-    return res.send({ nickname, profile_img });
+    return res.send({ 
+        nickname, 
+        profile_img 
+    });
 });
 
 
