@@ -28,7 +28,8 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    img_url: DataTypes.STRING
+    img_url: DataTypes.STRING,
+    post_type: INTEGER
   }, {
     sequelize,
     modelName: 'Post',
