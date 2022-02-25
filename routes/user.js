@@ -38,7 +38,7 @@ router.post("/login", loggedinMiddleware, async (req, res) => {
 
     const newToken = jwt.sign({ nickname: findUser[0]["nickname"] }, jsonWebTokenKey);
     res.cookie('token', 'Bearer ' + newToken, { maxAge: 1800000, httpOnly: true });
-    return res.status(201).send({ success: "true", messages: "Login success", token: newToken, nickname: findUser[0]["nickname"] });
+    return res.status(201).send({ success: "true", messages: message.success, token: newToken});
 });
 
 // 사용자 등록
@@ -86,11 +86,17 @@ router.post("/register", loggedinMiddleware, async (req, res) => {
     return res.status(201).send({ success: "true", messages: "회원가입은 토큰을 발급하지 않으니 프론트께서는 다시 로그인API를 호출해주세요" });
 });
 
+// 내 정보 조회
+router.get('/me', authMiddleware, async (req, res) => {
+    const { nickname, profile_img } = res.locals;
+    return res.send({ nickname, profile_img });
+});
+
 
 // 임시
 router.get('/logout', authMiddleware, async (req, res) => {
     res.clearCookie('token');
-    return res.send({});
+    return res.send({messages: message.success});
 });
 
 module.exports = router;

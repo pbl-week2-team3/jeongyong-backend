@@ -1,5 +1,5 @@
 const express = require("express");
-const { Post, Like, sequelize } = require("../models");
+const { User, Post, Like, sequelize } = require("../models");
 const authMiddleware = require("../middlewares/auth-middleware");
 const loggedinMiddleware = require("../middlewares/loggedin-middleware");
 const message = require("../message");
@@ -9,17 +9,11 @@ const router = express.Router();
 
 // 게시글 목록 가져오기
 router.get("/post", loggedinMiddleware, async (req, res) => {
-    const { loggedin } = res.locals;
-    let query;
+    const { nickname } = res.locals;
 
-    if ( loggedin ) {
-        query = queryString.loggedinPostFind(res.locals.nickname);
-    } else {
-        query = queryString.notLoggedinPostFind();
-    }
-    
-    console.query;
+    const query = queryString.postFindQuery(nickname);
     const [ post ] = await sequelize.query(query);
+
     return res.send({
         post,
     });
@@ -39,20 +33,15 @@ router.post("/post", authMiddleware, async (req, res) => {
         img_url,
     });
 
-    return res.status(201).send({ success: "true", messages: ""});
+    return res.status(201).send({ success: "true", messages: message.success });
 });
 
 // 게시글 조회
 router.get("/post/:postId", loggedinMiddleware, async (req, res) => {
     const { postId } = req.params;
-    const { loggedin } = res.locals;
-    let query;
+    const { nickname } = res.locals;
 
-    if (loggedin) {
-        query = queryString.loggedinPostFindOne(res.locals.nickname, postId);
-    } else {
-        query = queryString.notLoggedinPostFindOne(postId);
-    }
+    const query = queryString.postFindOneQuery(nickname, postId);
 
     const [[post]] = await sequelize.query(query);
     return res.send(post);
@@ -76,10 +65,10 @@ router.put("/post/:postId", authMiddleware, async (req, res) => {
     });
 
     if (findPost.length === 0)
-        return res.status(400).send({ success: "false", messages: message.isNotExistPost });
+        return res.status(400).send({ success: "false", messages: message.isNotExistPostError });
 
     if (findPost[0]["user_id"] !== nickname)
-        return res.status(400).send({ success: "false", messages: message.isNotWriter })
+        return res.status(400).send({ success: "false", messages: message.isNotWriterError })
 
     await Post.update({
         contents,
@@ -90,7 +79,7 @@ router.put("/post/:postId", authMiddleware, async (req, res) => {
         }
     });
 
-    const query = queryString.loggedinPostFindOne(nickname, postId);
+    const query = queryString.postFindOneQuery(nickname, postId);
     const [[post]] = await sequelize.query(query);
     return res.send(post);
 });
@@ -109,10 +98,10 @@ router.delete("/post/:postId", authMiddleware, async (req, res) => {
     });
 
     if (findPost.length === 0)
-        return res.status(401).send({ success: "false", messages: message.isNotExistPost });
+        return res.status(401).send({ success: "false", messages: message.isNotExistPostError });
 
     if (findPost[0]["user_id"] !== nickname)
-        return res.status(400).send({ success: "false", messages: message.isNotWriter })
+        return res.status(400).send({ success: "false", messages: message.isNotWriterError })
 
     await Post.destroy({
         where: {
@@ -120,14 +109,7 @@ router.delete("/post/:postId", authMiddleware, async (req, res) => {
         }
     });
 
-    // 사실 이 부분은 연계되어 삭제되도록 처리하는 방법이 있을 것 같다.
-    await Like.destroy({
-        where: {
-            post_id: postId
-        }
-    })
-
-    return res.send({ success: "true", messages: "" });
+    return res.send({ success: "true", messages: message.success });
 });
 
 
@@ -136,19 +118,33 @@ router.post("/post/:postId/like", authMiddleware, async (req, res) => {
     const { postId } = req.params;
     const { nickname } = res.locals;
 
-    // 이게 과연 옳은 쿼리인가
-    const query = queryString.notExitstLike(nickname, postId);
-    const [ find ] = await sequelize.query(query);
-    
-    if (find[0]['result'] === 0)
-        return res.status(401).send({ success: "false", messages: message.duplicateLike });
+    const findPost = await Post.findAll({
+        raw: true,
+        attributes: [ "id" ],
+        where: { id: postId }
+    });
+
+    if (findPost.length === 0)
+        return res.status(400).send({ success: "false", messages: message.isNotExistPostError });
+
+    const findLike = await Like.findAll({
+        raw: true,
+        attributes: [ "user_id", "post_id" ],
+        where: {
+            user_id: nickname,
+            post_id: postId,
+        }
+    });
+
+    if (findLike.length !== 0)
+        return res.status(400).send({ success: "false", messages: message.existLikeError })
 
     await Like.create({
         user_id: nickname,
         post_id: postId
     });
 
-    return res.status(201).send({ success: "true", messages: ""})
+    return res.status(201).send({ success: "true", messages: message.success })
 });
 
 
@@ -157,27 +153,19 @@ router.delete("/post/:postId/like", authMiddleware, async (req, res) => {
     const { postId } = req.params;
     const { nickname } = res.locals;
 
-    const findPost = await Post.findAll({
+    const findLike = await Post.findAll({
+        raw: true,
         attributes: [ "id" ],
-        raw: true,
-        where: {
-            id: postId
-        }
-    });
-
-    if (findPost.length === 0)
-        return res.status(401).send({ success: "false", messages: message.isNotExistPost });
-
-    const findLike = await Like.findAll({
-        raw: true,
-        where: {
-            user_id: nickname,
-            post_id: postId,
-        }
+        where: { id: postId },
+        include: [{
+            model: Like,
+            attributes: [ "user_id", "post_id" ],
+            where: { user_id: nickname }
+        }]
     });
 
     if (findLike.length === 0)
-        return res.status(401).send({ success: "false", messages: message.isNotExistLike });
+        return res.status(401).send({ success: "false", messages: message.isNotExistLikeError });
 
     await Like.destroy({
         where: {
@@ -186,7 +174,7 @@ router.delete("/post/:postId/like", authMiddleware, async (req, res) => {
         }
     })
 
-    return res.status(200).send({ success: "true", message: ""})
+    return res.status(200).send({ success: "true", message: message.success })
 });
 
 module.exports = router;

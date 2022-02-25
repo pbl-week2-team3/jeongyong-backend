@@ -10,15 +10,21 @@ const loggedinError = "이미 로그인한 사용자입니다.";
 const isEmptyError = "빈 칸이 있습니다. 채워주세요.";
 const confirmPasswordError = "입력하신 비밀번호가 비밀번호 확인란과 일치하지 않습니다.";
 
+
 // 인증 메시지
 const authError = "로그인이 필요한 서비스입니다.";
 
 
 // 게시판 메시지
-const isNotExistPost = "존재하지 않는 게시글입니다.";
-const isNotWriter = "작성자만 수정 및 삭제할 수 있습니다.";
-const isNotExistLike = "좋아요를 누른적이 없거나 잘못된 요청입니다.";
-const duplicateLike = "좋아요 중복 요청입니다.";
+const isNotExistPostError = "존재하지 않는 게시글입니다.";
+const isNotWriterError = "작성자만 수정 및 삭제할 수 있습니다.";
+const isNotExistLikeError = "좋아요를 누른적이 없거나 잘못된 요청입니다.";
+const existLikeError = "좋아요 중복 요청입니다.";
+
+
+// 요청 성공
+const success = "요청 성공";
+
 
 module.exports = { 
     emailFormError,
@@ -30,8 +36,9 @@ module.exports = {
     isEmptyError, 
     confirmPasswordError,
     authError,
-    isNotExistPost,
-    isNotWriter,
-    isNotExistLike,
-    duplicateLike
+    isNotExistPostError,
+    isNotWriterError,
+    isNotExistLikeError,
+    existLikeError,
+    success,
 }
