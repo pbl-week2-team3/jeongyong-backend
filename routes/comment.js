@@ -7,19 +7,19 @@ const router = express.Router();
 //     res.send("get /comment/:postId ok");
 // });
 
-// 댓글 추가
-router.post("/comment/:postId", (req, res) => {
-    res.send("post /comment/:postId ok");
-});
+// // 댓글 추가
+// router.post("/comment/:postId", (req, res) => {
+//     res.send("post /comment/:postId ok");
+// });
 
-// 댓글 수정
-router.put("/comment/:postId/:commentId", (req, res) => {
-    res.send("put /comment/:postId/:commentId ok");
-});
+// // 댓글 수정
+// router.put("/comment/:postId/:commentId", (req, res) => {
+//     res.send("put /comment/:postId/:commentId ok");
+// });
 
-// 댓글 삭제
-router.delete("/comment/:postId/:commentId", (req, res) => {
-    res.send("delete /comment/:postId/:commentId ok");
-});
+// // 댓글 삭제
+// router.delete("/comment/:postId/:commentId", (req, res) => {
+//     res.send("delete /comment/:postId/:commentId ok");
+// });
 
 module.exports = router;

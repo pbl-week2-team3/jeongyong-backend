@@ -12,7 +12,6 @@ router.get("/post", loggedinMiddleware, async (req, res) => {
     const { nickname } = res.locals;
 
     const query = queryString.postFindQuery(nickname);
-    console.log(query);
     const [ post ] = await sequelize.query(query);
 
     return res.send({

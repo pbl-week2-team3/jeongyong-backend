@@ -2,9 +2,9 @@ const express = require("express");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
+const requestIp = require("request-ip");
 const port = 3000;
 const app = express();
-
 
 const { sequelize } = require('./models');
 
@@ -19,9 +19,8 @@ const userRouter = require("./routes/user");
 const megazineRouter = require("./routes/post");
 const commentRouter = require("./routes/comment");
 
-
 const requestMiddleware = (req, res, next) => {
-    console.log("Request URL:", req.originalUrl, " - ", new Date());
+    console.log("Method:", req.method, "Request IP :", requestIp.getClientIp(req), ", Request URL:", req.originalUrl, " - ", new Date());
     next();
 };
 
@@ -41,7 +40,7 @@ app.get('/', (req, res) => {
     res.send('this is root page');
 });
 
-app.listen(port, () => {
+app.listen(port, "0.0.0.0", () => {
     console.log("Express server listening on port :", port);
 });
 

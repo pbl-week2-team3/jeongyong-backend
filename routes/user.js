@@ -46,7 +46,7 @@ router.post("/register", loggedinMiddleware, async (req, res) => {
     let { profile_img_url } = req.body;
     
     if (res.locals.nickname.length !== 0)
-    return res.status(400).send({ success: "false", messages: message.loggedinError });
+        return res.status(400).send({ success: "false", messages: message.loggedinError });
 
     if (id.length === 0 || confirmPassword.length === 0)
         return res.status(400).send({ success: "false", messages: message.isEmptyError });
@@ -94,10 +94,10 @@ router.get('/me', authMiddleware, async (req, res) => {
 });
 
 
-// 임시
-router.get('/logout', authMiddleware, async (req, res) => {
-    res.clearCookie('token');
-    return res.send({messages: message.success});
-});
+// // 임시
+// router.get('/logout', authMiddleware, async (req, res) => {
+//     res.clearCookie('token');
+//     return res.send({messages: message.success});
+// });
 
 module.exports = router;
